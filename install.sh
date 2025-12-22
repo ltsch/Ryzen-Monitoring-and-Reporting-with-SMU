@@ -111,15 +111,11 @@ info "Installing Ryzen Temperature Monitor..."
 if [[ ! -f "$SCRIPT_DIR/ryzen_monitor/src/ryzen_monitor" ]] && [[ ! -f /usr/local/bin/ryzen_monitor ]]; then
     info "Cloning ryzen_monitor..."
     cd "$TEMP_BUILD_DIR"
-    git clone https://github.com/AzagraMac/ryzen_monitor.git
+    # Use ltsch fork which includes patches for newer drivers and single-shot mode
+    git clone https://github.com/ltsch/ryzen_monitor.git
     
     if [[ -d "ryzen_monitor" ]]; then
         cd ryzen_monitor
-        
-        info "Patching ryzen_monitor for newer driver compatibility..."
-        # Patch libsmu.h to support versions up to 0.1.5
-        sed -i 's/KERNEL_DRIVER_SUPP_VERS_COUNT 3/KERNEL_DRIVER_SUPP_VERS_COUNT 6/' src/lib/libsmu.h
-        sed -i '/"0.1.2"/a \    "0.1.3",\n    "0.1.4",\n    "0.1.5"' src/lib/libsmu.h
         
         info "Building ryzen_monitor..."
         make clean && make
