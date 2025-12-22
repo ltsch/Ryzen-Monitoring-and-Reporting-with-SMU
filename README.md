@@ -4,6 +4,8 @@ A lightweight CPU temperature monitoring solution for AMD Ryzen processors runni
 
 # Note: This was designed for Proxmox, but should work on any Linux system with a Ryzen processor.
 
+### Transparency notice: This project contains some AI generated code because I am not a very good developer.
+
 ## Features
 
 - 📊 **Per-minute temperature logging** to CSV
