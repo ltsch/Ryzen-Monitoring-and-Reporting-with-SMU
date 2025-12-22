@@ -1,0 +1,15 @@
+# Dependencies (downloaded by install.sh)
+ryzen_monitor/
+ryzen_smu/
+
+# Temporary files
+*.tmp
+*.log
+
+# System logs (if running from this dir for testing)
+current.csv
+daily_summary.csv
+
+# Editor files
+.vscode/
+.idea/

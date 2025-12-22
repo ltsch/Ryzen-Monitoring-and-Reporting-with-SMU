@@ -1,0 +1,3 @@
+# Ryzen CPU Temperature Logging
+# Collect temperature data every minute
+* * * * * root /root/ryzen_temps.sh >/dev/null 2>&1
