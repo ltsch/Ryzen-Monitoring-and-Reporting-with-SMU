@@ -1,6 +1,8 @@
-# Ryzen Temperature Monitor for Proxmox
+# Ryzen Temperature Monitor Designed for Proxmox
 
 A lightweight CPU temperature monitoring solution for AMD Ryzen processors running on Proxmox, built on top of the [ryzen_smu](https://github.com/leogx9r/ryzen_smu) kernel module.
+
+# Note: This was designed for Proxmox, but should work on any Linux system with a Ryzen processor.
 
 ## Features
 
