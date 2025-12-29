@@ -144,10 +144,7 @@ info "Installing ryzen_temps.sh"
 cp "$SCRIPT_DIR/ryzen_temps.sh" /usr/local/bin/ryzen_temps.sh
 chmod +x /usr/local/bin/ryzen_temps.sh
 
-# Update script to use new path
-if [[ -f "$SCRIPT_DIR/ryzen_temps.cron" ]]; then
-    sed -i 's|/root/ryzen_temps.sh|/usr/local/bin/ryzen_temps.sh|g' "$SCRIPT_DIR/ryzen_temps.cron" 2>/dev/null || true
-fi
+
 
 # Install history viewer
 info "Installing ryzen_temps_history"
