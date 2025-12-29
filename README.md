@@ -13,26 +13,28 @@ A lightweight CPU temperature monitoring solution for AMD Ryzen processors runni
 - ⚠️ **Thermal alerts** for high temperature detection
 - 🔄 **Automatic log rotation** (7-day retention)
 - 📅 **Daily summaries** for long-term trend analysis
-- 🔧 **[Patched ryzen_monitor](PATCHES.md)** with single-shot mode and updated driver support
+- 🔧 **[ryzen_monitor](https://github.com/AzagraMac/ryzen_monitor)** (now includes 0.1.5 SMU module support and single-shot mode)
 
 ## Prerequisites
 
 - AMD Ryzen processor
 - Root privileges (sudo)
 - Internet connection (for cloning repositories)
+- `bc` (Basic Calculator) - installed automatically by script
 
 ## Installation
-
+# This must be run as root or via sudo!
 ```bash
 # Clone/download this folder, then:
 sudo ./install.sh
 ```
 
 This will automatically:
-1. Check for `ryzen_smu` kernel module, and if missing:
+1. Install dependencies (`git`, `bc`, `dkms`, headers)
+2. Check for `ryzen_smu` kernel module, and if missing:
    - Clone it from GitHub
    - Build and install it (via DKMS if available)
-2. Check for `ryzen_monitor`, and if missing:
+3. Check for `ryzen_monitor`, and if missing:
    - Clone it from GitHub
    - **Auto-patch it** for compatibility with newer drivers
    - Build and install to `/usr/local/bin/`

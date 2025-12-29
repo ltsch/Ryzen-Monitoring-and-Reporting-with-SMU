@@ -43,6 +43,12 @@ if ! command -v git &>/dev/null; then
     apt-get update && apt-get install -y git
 fi
 
+# Check for bc (required for history viewer math)
+if ! command -v bc &>/dev/null; then
+    info "Installing bc..."
+    apt-get update && apt-get install -y bc
+fi
+
 # cleanup function
 cleanup() {
     rm -rf "$TEMP_BUILD_DIR"
@@ -111,8 +117,8 @@ info "Installing Ryzen Temperature Monitor..."
 if [[ ! -f "$SCRIPT_DIR/ryzen_monitor/src/ryzen_monitor" ]] && [[ ! -f /usr/local/bin/ryzen_monitor ]]; then
     info "Cloning ryzen_monitor..."
     cd "$TEMP_BUILD_DIR"
-    # Use ltsch fork which includes patches for newer drivers and single-shot mode
-    git clone https://github.com/ltsch/ryzen_monitor.git
+    # Use upstream repo which now includes my PRs for driver support and single-shot mode
+    git clone https://github.com/AzagraMac/ryzen_monitor.git
     
     if [[ -d "ryzen_monitor" ]]; then
         cd ryzen_monitor

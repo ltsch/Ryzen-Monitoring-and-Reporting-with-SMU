@@ -42,6 +42,7 @@ fi
 
 format_temp() {
     local temp=$1
+    if [[ -z "$temp" ]]; then return; fi
     if (( $(echo "$temp > $CRIT_TEMP" | bc -l) )); then
         echo -e "${RED}${temp}°C${NC}"
     elif (( $(echo "$temp > $WARN_TEMP" | bc -l) )); then
@@ -178,6 +179,9 @@ check_alerts() {
     max_core=$(tail -n +2 "$CURRENT_LOG" | cut -d',' -f2 | sort -rn | head -1)
     max_pkg=$(tail -n +2 "$CURRENT_LOG" | cut -d',' -f3 | sort -rn | head -1)
     
+    if [[ -z "$max_core" ]]; then max_core=0; fi
+    if [[ -z "$max_pkg" ]]; then max_pkg=0; fi
+    
     if (( $(echo "$max_core > $CRIT_TEMP" | bc -l) )); then
         echo -e "${RED}⚠ CRITICAL: Core temp reached ${max_core}°C (threshold: ${CRIT_TEMP}°C)${NC}"
         alerts=$((alerts+1))
@@ -198,6 +202,7 @@ check_alerts() {
     
     # Check for throttling (THM > 95%)
     max_thm=$(tail -n +2 "$CURRENT_LOG" | cut -d',' -f6 | sort -rn | head -1)
+    if [[ -z "$max_thm" ]]; then max_thm=0; fi
     if (( $(echo "$max_thm > 95" | bc -l) )); then
         echo -e "${RED}⚠ CRITICAL: Thermal throttling detected (THM: ${max_thm}%)${NC}"
         alerts=$((alerts+1))

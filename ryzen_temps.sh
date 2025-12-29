@@ -10,13 +10,19 @@ RETENTION_DAYS=7
 # Create log directory if needed
 mkdir -p "$LOG_DIR"
 
+# Prevent concurrent runs
+exec 9>"$LOG_DIR/lock"
+if ! flock -n 9; then
+    exit 1
+fi
+
 # Initialize CSV header if file doesn't exist
 if [[ ! -f "$CURRENT_LOG" ]]; then
     echo "timestamp,peak_core_temp,peak_pkg_temp,soc_temp,ppt_pct,thm_pct,socket_power" > "$CURRENT_LOG"
 fi
 
 # Get ryzen_monitor output
-OUTPUT=$(ryzen_monitor -1 2>/dev/null)
+OUTPUT=$(/usr/local/bin/ryzen_monitor -1 2>/dev/null)
 
 if [[ -z "$OUTPUT" ]]; then
     echo "Error: ryzen_monitor failed" >&2
