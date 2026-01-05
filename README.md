@@ -28,8 +28,8 @@ Originally designed for Proxmox, but should work on any apt-based Linux distribu
 
 ```bash
 # Clone this repository
-git clone https://github.com/YOUR_USERNAME/temp_monitor.git
-cd temp_monitor
+git clone https://github.com/ltsch/Ryzen-Monitoring-and-Reporting-with-SMU.git
+cd Ryzen-Monitoring-and-Reporting-with-SMU
 
 # Run installer as root
 sudo ./install.sh
