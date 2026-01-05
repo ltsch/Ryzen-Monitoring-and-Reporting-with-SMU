@@ -1,10 +1,11 @@
-# Ryzen Temperature Monitor Designed for Proxmox
+# Ryzen Temperature Monitor
 
-A lightweight CPU temperature monitoring solution for AMD Ryzen processors running on Proxmox, built on top of the [ryzen_smu](https://github.com/leogx9r/ryzen_smu) kernel module.
+A lightweight CPU temperature monitoring solution for AMD Ryzen processors, built on top of the [ryzen_smu](https://github.com/leogx9r/ryzen_smu) kernel module.
 
-- Note: This was designed for Proxmox, but should work on any Linux system with a Ryzen processor.
+Originally designed for Proxmox, but should work on any apt-based Linux distribution running on a Ryzen processor.
 
-### Transparency notice: This project contains some AI generated code because I am not a very good developer.
+> [!NOTE]
+> Full disclosure: This project contains some AI-written code because I am not a very good developer. I have reviewed it, but transparency is key.
 
 ## Features
 
@@ -13,34 +14,34 @@ A lightweight CPU temperature monitoring solution for AMD Ryzen processors runni
 - ⚠️ **Thermal alerts** for high temperature detection
 - 🔄 **Automatic log rotation** (7-day retention)
 - 📅 **Daily summaries** for long-term trend analysis
-- 🔧 **[ryzen_monitor](https://github.com/AzagraMac/ryzen_monitor)** (now includes 0.1.5 SMU module support and single-shot mode)
+- 🌈 **RGB lighting control** via OpenRGB (optional)
+- 🔧 Built on [ryzen_monitor](https://github.com/AzagraMac/ryzen_monitor)
 
 ## Prerequisites
 
 - AMD Ryzen processor
 - Root privileges (sudo)
-- Internet connection (for cloning repositories)
-- `bc` (Basic Calculator) - installed automatically by script
+- Internet connection (for cloning dependencies)
+- `bc` (Basic Calculator) - installed automatically
 
-## Installation
-# This must be run as root or via sudo!
+## Quick Start
+
 ```bash
-# Clone/download this folder, then:
+# Clone this repository
+git clone https://github.com/YOUR_USERNAME/temp_monitor.git
+cd temp_monitor
+
+# Run installer as root
 sudo ./install.sh
 ```
 
-This will automatically:
-1. Install dependencies (`git`, `bc`, `dkms`, headers)
-2. Check for `ryzen_smu` kernel module, and if missing:
-   - Clone it from GitHub
-   - Build and install it (via DKMS if available)
-3. Check for `ryzen_monitor`, and if missing:
-   - Clone it from GitHub
-   - **Auto-patch it** for compatibility with newer drivers
-   - Build and install to `/usr/local/bin/`
-3. Install logging script and viewer
-4. Create log directory at `/var/log/ryzen_temps/`
-5. Set up cron job for per-minute data collection
+The installer will automatically:
+1. Install dependencies (`git`, `bc`, `dkms`, kernel headers)
+2. Build and install `ryzen_smu` kernel module (via DKMS)
+3. Build and install `ryzen_monitor` utility
+4. Install the temperature logging scripts
+5. Create log directory at `/var/log/ryzen_temps/`
+6. Set up cron job for per-minute data collection
 
 ## Usage
 
@@ -65,7 +66,7 @@ ryzen_temps_history -w
 # Peak temperatures
 ryzen_temps_history -p
 
-# Thermal alert check (exit code = # of alerts)
+# Thermal alert check (exit code = number of alerts)
 ryzen_temps_history -a
 ```
 
@@ -79,22 +80,22 @@ ryzen_monitor
 ryzen_monitor -1
 ```
 
-## Log Files
+## RGB Lighting Integration
 
-| File | Contents |
-|------|----------|
-| `/var/log/ryzen_temps/current.csv` | Today's minute-by-minute data |
-| `/var/log/ryzen_temps/YYYY-MM-DD.csv` | Archived daily logs (7-day retention) |
-| `/var/log/ryzen_temps/daily_summary.csv` | Daily min/avg/max (permanent) |
+This monitor can optionally control your motherboard's RGB LEDs to reflect CPU temperature (Green → Yellow → Red).
 
-## CSV Format
+**See [OPENRGB.md](OPENRGB.md) for setup instructions.**
 
-```csv
-timestamp,peak_core_temp,peak_pkg_temp,soc_temp,ppt_pct,thm_pct,socket_power
-2025-12-22T17:10:46-06:00,79.98,87.75,45.37,90.79,89.22,128.898
-```
+> [!IMPORTANT]
+> RGB control is **disabled by default**. You must enable it after installation.
 
 ## Configuration
+
+### Temperature Logging
+
+The main logging script is installed to `/usr/local/bin/ryzen_temps.sh`.
+
+### History Viewer Thresholds
 
 Edit `/usr/local/bin/ryzen_temps_history` to adjust alert thresholds:
 
@@ -103,11 +104,43 @@ WARN_TEMP=80   # Warning threshold (yellow)
 CRIT_TEMP=85   # Critical threshold (red)
 ```
 
+### OpenRGB Settings
+
+Edit `/usr/local/bin/ryzen_temps.sh` to configure RGB lighting:
+
+```bash
+ENABLE_OPENRGB=false   # Set to 'true' to enable
+OPENRGB_DEVICES="0"    # Device ID(s) to control
+RGB_TEMP_LOW=60        # Green below this temp
+RGB_TEMP_MID=70        # Yellow around this temp  
+RGB_TEMP_HIGH=80       # Red above this temp
+```
+
+See [OPENRGB.md](OPENRGB.md) for detailed configuration options.
+
+## Log Files
+
+| File | Contents |
+|------|----------|
+| `/var/log/ryzen_temps/current.csv` | Today's minute-by-minute data |
+| `/var/log/ryzen_temps/YYYY-MM-DD.csv` | Archived daily logs (7-day retention) |
+| `/var/log/ryzen_temps/daily_summary.csv` | Daily min/avg/max (permanent) |
+
+### CSV Format
+
+```csv
+timestamp,peak_core_temp,peak_pkg_temp,soc_temp,ppt_pct,thm_pct,socket_power
+2025-12-22T17:10:46-06:00,79.98,87.75,45.37,90.79,89.22,128.898
+```
+
 ## Uninstall
 
 ```bash
 sudo ./install.sh --uninstall
 ```
+
+> [!NOTE]
+> Log directory `/var/log/ryzen_temps/` is preserved. Delete manually if desired.
 
 ## License
 

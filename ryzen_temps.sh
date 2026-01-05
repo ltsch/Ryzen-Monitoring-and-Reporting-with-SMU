@@ -1,11 +1,57 @@
 #!/bin/bash
 # Ryzen CPU Temperature Logger
 # Parses ryzen_monitor output and logs key metrics to CSV
+# Optionally controls RGB lighting via OpenRGB
 
+# =============================================================================
+# LOGGING CONFIGURATION
+# =============================================================================
 LOG_DIR="/var/log/ryzen_temps"
 CURRENT_LOG="$LOG_DIR/current.csv"
 DAILY_SUMMARY="$LOG_DIR/daily_summary.csv"
 RETENTION_DAYS=7
+
+# =============================================================================
+# OPENRGB CONFIGURATION
+# =============================================================================
+# Set to true to enable RGB lighting control based on CPU temperature.
+# Requires OpenRGB to be installed. See OPENRGB.md for setup instructions.
+ENABLE_OPENRGB=false
+
+# Space-separated list of OpenRGB device IDs to control.
+# Run `openrgb --list-devices` to find your device IDs.
+OPENRGB_DEVICES="0"
+
+# Path to the OpenRGB binary
+OPENRGB_BIN="/usr/bin/openrgb"
+
+# Color byte order. Most devices use "RGB", but some motherboards (e.g. ASRock)
+# use "GRB". If colors appear wrong (Green shows as Red), try switching this.
+OPENRGB_COLOR_ORDER="GRB"
+
+# Enable debug logging for OpenRGB commands.
+# Logs are written to /tmp/rgb_debug.log and /tmp/openrgb_last_run.log
+OPENRGB_DEBUG=false
+
+# -----------------------------------------------------------------------------
+# RGB Temperature Thresholds (Celsius)
+# -----------------------------------------------------------------------------
+# These define the color gradient for RGB lighting:
+#   - Below RGB_TEMP_LOW:  Pure Green (cool/idle)
+#   - RGB_TEMP_LOW to MID: Green fading to Yellow (warming up)
+#   - RGB_TEMP_MID to HIGH: Yellow fading to Red (hot)
+#   - Above RGB_TEMP_HIGH: Pure Red (critical)
+#
+# IMPORTANT: Values must be in ascending order: LOW < MID < HIGH
+# Typical values for high TdP Ryzen CPUs: 60, 70, 80
+# For lower TdP CPUs, you might use: 50, 60, 70
+RGB_TEMP_LOW=60
+RGB_TEMP_MID=70
+RGB_TEMP_HIGH=80
+
+# =============================================================================
+# SCRIPT LOGIC - Do not modify below unless you know what you're doing
+# =============================================================================
 
 # Create log directory if needed
 mkdir -p "$LOG_DIR"
@@ -59,7 +105,86 @@ fi
 # Append to log
 echo "$TIMESTAMP,$PEAK_CORE_TEMP,$PEAK_PKG_TEMP,$SOC_TEMP,$PPT_PCT,$THM_PCT,$SOCKET_POWER" >> "$CURRENT_LOG"
 
-# Rotate logs at midnight
+# =============================================================================
+# RGB Control Logic
+# =============================================================================
+if [[ "$ENABLE_OPENRGB" == "true" ]]; then
+    # Validate OpenRGB binary exists
+    if [[ ! -x "$OPENRGB_BIN" ]]; then
+        if [[ "$OPENRGB_DEBUG" == "true" ]]; then
+            echo "$(date): Error: OpenRGB enabled but binary not found at $OPENRGB_BIN" >> /tmp/rgb_debug.log
+        fi
+    else
+        # Validate temperature thresholds
+        if [[ "$RGB_TEMP_LOW" -ge "$RGB_TEMP_MID" ]] || [[ "$RGB_TEMP_MID" -ge "$RGB_TEMP_HIGH" ]]; then
+            if [[ "$OPENRGB_DEBUG" == "true" ]]; then
+                echo "$(date): Error: Invalid RGB thresholds. Must be LOW < MID < HIGH. Got: $RGB_TEMP_LOW < $RGB_TEMP_MID < $RGB_TEMP_HIGH" >> /tmp/rgb_debug.log
+            fi
+        else
+            # Round temperature to integer for comparison
+            if [[ -z "$PEAK_CORE_TEMP" ]]; then
+                TEMP_VAL=0
+            else
+                TEMP_VAL=$(printf "%.0f" "$PEAK_CORE_TEMP")
+            fi
+
+            # Gradient Logic:
+            # Low -> Mid: Green (0,255,0) -> Yellow-ish (180,255,0)
+            # Mid -> High: Yellow-ish -> Red (255,0,0)
+            
+            if [[ "$TEMP_VAL" -lt "$RGB_TEMP_LOW" ]]; then
+                R=0
+                G=255
+                B=0
+            elif [[ "$TEMP_VAL" -lt "$RGB_TEMP_MID" ]]; then
+                # Range 1: Ramp Red up to ~180
+                RANGE=$(( RGB_TEMP_MID - RGB_TEMP_LOW ))
+                OFFSET=$(( TEMP_VAL - RGB_TEMP_LOW ))
+                R=$(( OFFSET * 180 / RANGE ))
+                G=255
+                B=0
+            elif [[ "$TEMP_VAL" -lt "$RGB_TEMP_HIGH" ]]; then
+                # Range 2: Ramp Red 180->255, Ramp Green 255->0
+                RANGE=$(( RGB_TEMP_HIGH - RGB_TEMP_MID ))
+                OFFSET=$(( TEMP_VAL - RGB_TEMP_MID ))
+                R=$(( 180 + (OFFSET * 75 / RANGE) ))
+                if [[ "$R" -gt 255 ]]; then R=255; fi
+                G=$(( 255 - (OFFSET * 255 / RANGE) ))
+                B=0
+            else
+                # High Temp -> Red
+                R=255
+                G=0
+                B=0
+            fi
+
+            # Convert RGB to Hex based on Color Order
+            if [[ "$OPENRGB_COLOR_ORDER" == "GRB" ]]; then
+                COLOR=$(printf "%02X%02X%02X" $G $R $B)
+            else
+                COLOR=$(printf "%02X%02X%02X" $R $G $B)
+            fi
+
+            if [[ "$OPENRGB_DEBUG" == "true" ]]; then
+                echo "$(date): Temp=$TEMP_VAL Color=$COLOR R=$R G=$G B=$B" >> /tmp/rgb_debug.log
+            fi
+
+            # Set configured devices
+            for DEVICE_ID in $OPENRGB_DEVICES; do
+                $OPENRGB_BIN --noautoconnect -d "$DEVICE_ID" -m Static -c "$COLOR" >> /tmp/openrgb_last_run.log 2>&1
+            done
+            
+            if [[ "$OPENRGB_DEBUG" == "true" ]]; then
+                echo "$(date): OpenRGB exited with $?" >> /tmp/rgb_debug.log
+            fi
+        fi
+    fi
+fi
+
+
+# =============================================================================
+# Log Rotation (runs at midnight)
+# =============================================================================
 CURRENT_DATE=$(date +%Y-%m-%d)
 LOG_DATE=$(head -2 "$CURRENT_LOG" 2>/dev/null | tail -1 | cut -d'T' -f1)
 
