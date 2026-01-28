@@ -75,18 +75,32 @@ if [[ ! -d /sys/kernel/ryzen_smu_drv ]]; then
             apt-get update && apt-get install -y dkms build-essential linux-headers-$(uname -r)
         fi
         
-        # Get version from dkms.conf
-        SMU_VERSION=$(grep 'PACKAGE_VERSION=' dkms.conf | cut -d'"' -f2)
+        # Get version from Makefile (more reliable than dkms.conf placeholders)
+        if [[ -f Makefile ]]; then
+             SMU_VERSION=$(grep '^VERSION' Makefile | awk '{print $3}')
+        fi
+        
+        # Fallback to dkms.conf if Makefile check fails or returns empty
+        if [[ -z "$SMU_VERSION" ]]; then
+             SMU_VERSION=$(grep 'PACKAGE_VERSION=' dkms.conf | cut -d'"' -f2)
+        fi
+        
         SMU_NAME="ryzen_smu"
         
-        # Install via DKMS for automatic rebuilds on kernel upgrades
-        if [[ -n "$SMU_VERSION" ]]; then
+        # Check if we have a valid version (not a placeholder)
+        if [[ -n "$SMU_VERSION" ]] && [[ "$SMU_VERSION" != "@VERSION@" ]]; then
             info "Installing ryzen_smu $SMU_VERSION via DKMS..."
             
             # Copy source to DKMS location
             mkdir -p "/usr/src/${SMU_NAME}-${SMU_VERSION}"
             cp -r * "/usr/src/${SMU_NAME}-${SMU_VERSION}/"
             
+            # Replace placeholders in dkms.conf
+            if [[ -f "/usr/src/${SMU_NAME}-${SMU_VERSION}/dkms.conf" ]]; then
+                sed -i "s/@VERSION@/$SMU_VERSION/g" "/usr/src/${SMU_NAME}-${SMU_VERSION}/dkms.conf"
+                sed -i "s/@CFLGS@//g" "/usr/src/${SMU_NAME}-${SMU_VERSION}/dkms.conf"
+            fi
+
             # Add and build
             dkms add -m "$SMU_NAME" -v "$SMU_VERSION" 2>/dev/null || true
             dkms build -m "$SMU_NAME" -v "$SMU_VERSION"
